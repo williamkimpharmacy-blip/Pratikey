@@ -14,6 +14,12 @@ import subprocess
 import zipfile
 from pathlib import Path
 
+# Force UTF-8 output on Windows (avoids UnicodeEncodeError with special chars)
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8')
+if hasattr(sys.stderr, 'reconfigure'):
+    sys.stderr.reconfigure(encoding='utf-8')
+
 APP_VERSION = "1.0.0"
 APP_NAME    = "Pratikey"
 
@@ -34,7 +40,7 @@ def main():
 
     print()
     print("=" * 52)
-    print(f"  {APP_NAME} {APP_VERSION} — Windows Build Script")
+    print(f"  {APP_NAME} {APP_VERSION} - Windows Build Script")
     print("=" * 52)
     print()
 
