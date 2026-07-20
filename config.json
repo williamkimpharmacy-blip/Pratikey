@@ -1,0 +1,127 @@
+{
+  "$schema": "./config.schema.json",
+  "version": "1.0",
+  "description": "Pratikey default layout",
+  "mappings": [
+    {
+      "key": "F1",
+      "label": "New Tab",
+      "emoji": "\u2795",
+      "action": {
+        "type": "shortcut",
+        "shortcut": "cmd+t"
+      },
+      "enabled": true
+    },
+    {
+      "key": "F2",
+      "label": "Paste",
+      "emoji": "\ud83d\udccc",
+      "action": {
+        "type": "shortcut",
+        "shortcut": "cmd+v"
+      },
+      "enabled": true
+    },
+    {
+      "key": "F3",
+      "label": "Copy",
+      "emoji": "\ud83d\udccb",
+      "action": {
+        "type": "shortcut",
+        "shortcut": "cmd+c"
+      },
+      "enabled": true
+    },
+    {
+      "key": "F4",
+      "label": "Undo",
+      "emoji": "\u21a9\ufe0f",
+      "action": {
+        "type": "shortcut",
+        "shortcut": "cmd+z"
+      },
+      "enabled": true
+    },
+    {
+      "key": "F5",
+      "label": "Save",
+      "emoji": "\ud83d\udcbe",
+      "action": {
+        "type": "shortcut",
+        "shortcut": "cmd+s"
+      },
+      "enabled": true
+    },
+    {
+      "key": "F6",
+      "label": "Print",
+      "emoji": "\ud83d\udda8\ufe0f",
+      "action": {
+        "type": "shortcut",
+        "shortcut": "cmd+p"
+      },
+      "enabled": true
+    },
+    {
+      "key": "F7",
+      "label": "Screenshot",
+      "emoji": "\ud83d\udcf8",
+      "action": {
+        "type": "shortcut",
+        "shortcut": "cmd+shift+4"
+      },
+      "enabled": true
+    },
+    {
+      "key": "F8",
+      "label": "Calculator",
+      "emoji": "\ud83d\udd22",
+      "action": {
+        "type": "run_command",
+        "command": "open -a Calculator"
+      },
+      "enabled": true
+    },
+    {
+      "key": "F9",
+      "label": "Lock Screen",
+      "emoji": "\ud83d\udd12",
+      "action": {
+        "type": "shortcut",
+        "shortcut": "ctrl+cmd+q"
+      },
+      "enabled": true
+    },
+    {
+      "key": "F10",
+      "label": "Google Search",
+      "emoji": "\ud83d\udd0e",
+      "action": {
+        "type": "run_command",
+        "command": "open https://www.google.com"
+      },
+      "enabled": true
+    },
+    {
+      "key": "F11",
+      "label": "Volume Down",
+      "emoji": "\ud83d\udd09",
+      "action": {
+        "type": "media_key",
+        "key": "volume_down"
+      },
+      "enabled": true
+    },
+    {
+      "key": "F12",
+      "label": "Volume Up",
+      "emoji": "\ud83d\udd0a",
+      "action": {
+        "type": "media_key",
+        "key": "volume_up"
+      },
+      "enabled": true
+    }
+  ]
+}

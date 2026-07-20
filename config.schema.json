@@ -1,0 +1,54 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Programmable Keyboard Config",
+  "type": "object",
+  "required": ["version", "mappings"],
+  "properties": {
+    "version": { "type": "string" },
+    "description": { "type": "string" },
+    "mappings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["key", "action"],
+        "properties": {
+          "key": {
+            "type": "string",
+            "pattern": "^F([1-9]|1[0-2])$",
+            "description": "F1 through F12"
+          },
+          "label": {
+            "type": "string",
+            "description": "Human-readable name shown in the tray menu"
+          },
+          "enabled": {
+            "type": "boolean",
+            "default": true
+          },
+          "action": {
+            "type": "object",
+            "required": ["type"],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": ["shortcut", "type_text", "run_command"]
+              },
+              "shortcut": {
+                "type": "string",
+                "description": "Key combo string, e.g. 'ctrl+shift+t'. Used when type=shortcut."
+              },
+              "text": {
+                "type": "string",
+                "description": "Text to type. Used when type=type_text."
+              },
+              "command": {
+                "type": "string",
+                "description": "Shell command to run. Used when type=run_command."
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

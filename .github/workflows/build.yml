@@ -1,0 +1,95 @@
+name: Build Pratikey
+
+# Runs automatically when you push a version tag (e.g. v1.0.0)
+# or manually from the GitHub Actions tab
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+
+  # ── Mac build → produces Pratikey-x.x.x.dmg ────────────────
+  build-mac:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install pynput pystray pillow pyinstaller
+
+      - name: Build macOS app + DMG
+        run: bash build_mac.sh
+
+      - name: Upload DMG artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Pratikey-mac
+          path: dist/Pratikey-*.dmg
+
+  # ── Windows build → produces Pratikey-x.x.x.zip ────────────
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install pynput pystray pillow pyinstaller
+
+      - name: Build Windows app
+        run: python build_windows.py
+
+      - name: Upload ZIP artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Pratikey-windows
+          path: dist/Pratikey-*.zip
+
+  # ── Create GitHub Release with both files attached ──────────
+  release:
+    needs: [build-mac, build-windows]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: write
+    steps:
+      - name: Download Mac build
+        uses: actions/download-artifact@v4
+        with:
+          name: Pratikey-mac
+          path: ./artifacts
+
+      - name: Download Windows build
+        uses: actions/download-artifact@v4
+        with:
+          name: Pratikey-windows
+          path: ./artifacts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "Pratikey ${{ github.ref_name }}"
+          body: |
+            ## Pratikey ${{ github.ref_name }}
+
+            ### Download
+            - 🍎 **Mac** → Download `Pratikey-*.dmg`, open it, drag to Applications
+            - 🪟 **Windows** → Download `Pratikey-*.zip`, extract, run `Pratikey.exe`
+
+            ### First launch
+            - **Mac:** Right-click → Open (first time only), then allow Accessibility in System Settings
+            - **Windows:** If SmartScreen warns you, click "More info" → "Run anyway"
+          files: ./artifacts/*
