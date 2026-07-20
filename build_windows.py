@@ -40,13 +40,13 @@ def main():
 
     # ── 1. Check Python ───────────────────────────────────────
     pyver = sys.version.split()[0]
-    print(f"  Python {pyver} ✓")
+    print(f"  Python {pyver} - OK")
 
     # ── 2. Install dependencies ───────────────────────────────
     print("  Installing dependencies...")
     deps = "pynput pystray pillow pyinstaller pywin32"
     run(f'pip install {deps} --quiet', "")
-    print("  Dependencies ready ✓")
+    print("  Dependencies ready - OK")
 
     # ── 3. Clean previous build ───────────────────────────────
     print("  Cleaning previous build...", end=" ", flush=True)
@@ -76,11 +76,11 @@ def main():
         sys.exit(1)
 
     print()
-    print(f"  dist/Pratikey/Pratikey.exe built ✓")
+    print(f"  dist/Pratikey/Pratikey.exe built - OK")
 
     # ── 5. ZIP for distribution ───────────────────────────────
     print(f"  Creating {zip_out.name}...", end=" ", flush=True)
-    zip_out.parent.mkdir(exist_ok=True)
+    zip_out.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(zip_out, "w", zipfile.ZIP_DEFLATED) as zf:
         src = Path("dist/Pratikey")
         for file in src.rglob("*"):
