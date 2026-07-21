@@ -123,12 +123,27 @@ MEDIA_KEY_MAP = {
 }
 
 
+def _ensure_english_ime():
+    """On Windows, switch to English input before firing shortcuts/text."""
+    if sys.platform != 'win32':
+        return
+    try:
+        import ctypes
+        # Load English (US) keyboard layout and activate it temporarily
+        hwnd = ctypes.windll.user32.GetForegroundWindow()
+        english_layout = ctypes.windll.user32.LoadKeyboardLayoutW("00000409", 1)
+        ctypes.windll.user32.PostMessageW(hwnd, 0x0050, 0, english_layout)
+    except Exception:
+        pass
+
+
 def fire_action(action: dict):
     action_type = action.get("type")
     if action_type == "shortcut":
         shortcut = action.get("shortcut", "")
         if shortcut:
             time.sleep(0.05)
+            _ensure_english_ime()
             fire_shortcut(shortcut)
     elif action_type == "media_key":
         media_key = MEDIA_KEY_MAP.get(action.get("key", ""))
@@ -196,7 +211,10 @@ class KeyboardEngine:
     def start(self):
         print("[Pratikey] Engine starting.")
         self._wait_for_accessibility()
-        self._listener = keyboard.Listener(on_press=self.on_press, suppress=False)
+        # On Windows: suppress=True stops the F-key reaching other apps (Cortana etc.)
+        # On macOS:   suppress=False is required — True breaks the CGEventTap
+        suppress = (sys.platform == 'win32')
+        self._listener = keyboard.Listener(on_press=self.on_press, suppress=suppress)
         self._listener.start()
         self._listener.join()
 
