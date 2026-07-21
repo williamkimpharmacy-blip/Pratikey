@@ -94,10 +94,13 @@ def build_menu(icon=None):
     # Toggle floating HUD bar
     def toggle_hud(icon, item):
         if hud:
-            try:
-                from PyObjCTools import AppHelper
-                AppHelper.callLater(0.05, _toggle_hud_and_rebuild)
-            except Exception:
+            if sys.platform == 'darwin':
+                try:
+                    from PyObjCTools import AppHelper
+                    AppHelper.callLater(0.05, _toggle_hud_and_rebuild)
+                except Exception:
+                    _toggle_hud_and_rebuild()
+            else:
                 _toggle_hud_and_rebuild()
 
     items.append(pystray.MenuItem(

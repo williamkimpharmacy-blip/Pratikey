@@ -40,7 +40,8 @@ a = Analysis(
     hiddenimports=hidden,
     hookspath=[],
     runtime_hooks=[],
-    excludes=['tkinter', 'matplotlib', 'numpy', 'scipy'],
+    # tkinter is needed on Windows for the HUD bar — only exclude it on macOS
+    excludes=(['tkinter'] if sys.platform == 'darwin' else []) + ['matplotlib', 'numpy', 'scipy'],
     cipher=block_cipher,
 )
 

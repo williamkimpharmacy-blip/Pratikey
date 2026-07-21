@@ -51,8 +51,10 @@ class _FKeyHUDWindows:
         try:
             import tkinter as tk
             self._root = tk.Tk()
+            self._root.withdraw()               # hide during configuration
             self._root.overrideredirect(True)   # no title bar / border
             self._root.attributes('-topmost', True)
+            self._root.wm_attributes('-toolwindow', True)  # no taskbar button
             self._root.configure(bg='#1a0d01')
 
             sw = self._root.winfo_screenwidth()
@@ -63,8 +65,34 @@ class _FKeyHUDWindows:
             self._frame.pack(fill='both', expand=True)
 
             self._do_refresh()
+
+            # Show the window
+            self._root.deiconify()
+            self._root.lift()
+            self._root.attributes('-topmost', True)
+
+            # Keep on top every second — Windows can lose topmost status
+            def keep_on_top():
+                try:
+                    if self._root and self.visible:
+                        self._root.attributes('-topmost', True)
+                        self._root.lift()
+                        self._root.after(1000, keep_on_top)
+                except Exception:
+                    pass
+            self._root.after(500, keep_on_top)
+
             self._root.mainloop()
         except Exception as e:
+            # Write to a log file — console is hidden in the frozen .exe
+            try:
+                import os, traceback
+                log_dir = os.path.join(os.environ.get('APPDATA', '.'), 'Pratikey')
+                os.makedirs(log_dir, exist_ok=True)
+                with open(os.path.join(log_dir, 'hud_error.log'), 'a') as f:
+                    f.write(f'[HUD-Win] error: {e}\n{traceback.format_exc()}\n')
+            except Exception:
+                pass
             print(f'[HUD-Win] error: {e}')
 
     def _do_refresh(self):
