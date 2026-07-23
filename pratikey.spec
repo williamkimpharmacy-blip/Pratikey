@@ -23,6 +23,12 @@ win_hidden = [
     'pynput.keyboard._win32',
     'pynput.mouse._win32',
     'pystray._win32',
+    # keyboard library (F-key suppression)
+    'keyboard',
+    # tkinter (Windows HUD bar)
+    'tkinter',
+    'tkinter.ttk',
+    '_tkinter',
 ]
 
 hidden = mac_hidden if sys.platform == 'darwin' else win_hidden

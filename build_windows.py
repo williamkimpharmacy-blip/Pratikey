@@ -50,7 +50,7 @@ def main():
 
     # ── 2. Install dependencies ───────────────────────────────
     print("  Installing dependencies...")
-    deps = "pynput pystray pillow pyinstaller pywin32"
+    deps = "pynput pystray pillow pyinstaller pywin32 keyboard"
     run(f'pip install {deps} --quiet', "")
     print("  Dependencies ready - OK")
 

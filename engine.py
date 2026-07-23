@@ -208,18 +208,68 @@ class KeyboardEngine:
         except Exception:
             pass  # Can't check — proceed anyway
 
+    def _start_windows(self):
+        """
+        Windows-specific listener using the 'keyboard' library.
+        Selectively suppresses ONLY the F-keys we have mapped, so Cortana
+        never sees them. Unmapped keys (and all other keys) pass through normally.
+        Falls back to pynput if 'keyboard' isn't installed.
+        """
+        try:
+            import keyboard as _kbd
+        except ImportError:
+            print("[Pratikey] 'keyboard' lib not found — falling back to pynput (Cortana may intercept).")
+            self._listener = keyboard.Listener(on_press=self.on_press, suppress=True)
+            self._listener.start()
+            self._listener.join()
+            return
+
+        def on_event(event):
+            if event.event_type != _kbd.KEY_DOWN:
+                return True          # Always let key-up events through
+
+            key_name = (event.name or '').upper()   # 'F1', 'F5', …
+            pynput_key = FKEY_MAP.get(key_name)
+
+            if pynput_key is None:
+                return True          # Not an F-key → pass through
+
+            if not self.active:
+                return True          # Engine paused → pass through
+
+            action = self.mappings.get(pynput_key)
+            if action is None:
+                return True          # F-key not mapped → pass through
+
+            # Mapped F-key: fire our action and swallow the keystroke.
+            # Returning False here means Cortana / Windows never sees it.
+            _ensure_english_ime()
+            threading.Thread(target=fire_action, args=(action,), daemon=True).start()
+            return False             # Suppress
+
+        self._win_hook = _kbd.hook(on_event, suppress=True)
+        print("[Pratikey] Windows keyboard hook installed.")
+        _kbd.wait()                  # Blocks until _kbd.unhook_all() is called
+
     def start(self):
         print("[Pratikey] Engine starting.")
         self._wait_for_accessibility()
-        # On Windows: suppress=True stops the F-key reaching other apps (Cortana etc.)
-        # On macOS:   suppress=False is required — True breaks the CGEventTap
-        suppress = (sys.platform == 'win32')
-        self._listener = keyboard.Listener(on_press=self.on_press, suppress=suppress)
-        self._listener.start()
-        self._listener.join()
+        if sys.platform == 'win32':
+            self._start_windows()
+        else:
+            # macOS: suppress=False is required — True breaks the CGEventTap
+            self._listener = keyboard.Listener(on_press=self.on_press, suppress=False)
+            self._listener.start()
+            self._listener.join()
 
     def stop(self):
-        if self._listener:
+        if sys.platform == 'win32':
+            try:
+                import keyboard as _kbd
+                _kbd.unhook_all()
+            except Exception:
+                pass
+        elif self._listener:
             self._listener.stop()
         print("[Pratikey] Engine stopped.")
 

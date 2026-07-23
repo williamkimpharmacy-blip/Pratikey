@@ -47,7 +47,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install pynput pystray pillow pyinstaller
+        run: pip install pynput pystray pillow pyinstaller keyboard
 
       - name: Build Windows app
         run: python build_windows.py

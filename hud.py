@@ -48,52 +48,137 @@ class _FKeyHUDWindows:
             self._root.after(0, self._do_refresh)
 
     def _run_tk(self):
+        """Try tkinter first; if it fails inside the frozen exe, fall back to win32gui."""
         try:
-            import tkinter as tk
-            self._root = tk.Tk()
-            self._root.withdraw()               # hide during configuration
-            self._root.overrideredirect(True)   # no title bar / border
-            self._root.attributes('-topmost', True)
-            self._root.wm_attributes('-toolwindow', True)  # no taskbar button
-            self._root.configure(bg='#1a0d01')
-
-            sw = self._root.winfo_screenwidth()
-            sh = self._root.winfo_screenheight()
-            self._root.geometry(f'{sw}x{self.BAR_HEIGHT}+0+{sh - self.BAR_HEIGHT}')
-
-            self._frame = tk.Frame(self._root, bg='#1a0d01')
-            self._frame.pack(fill='both', expand=True)
-
-            self._do_refresh()
-
-            # Show the window
-            self._root.deiconify()
-            self._root.lift()
-            self._root.attributes('-topmost', True)
-
-            # Keep on top every second — Windows can lose topmost status
-            def keep_on_top():
-                try:
-                    if self._root and self.visible:
-                        self._root.attributes('-topmost', True)
-                        self._root.lift()
-                        self._root.after(1000, keep_on_top)
-                except Exception:
-                    pass
-            self._root.after(500, keep_on_top)
-
-            self._root.mainloop()
+            self._run_tk_impl()
         except Exception as e:
-            # Write to a log file — console is hidden in the frozen .exe
+            self._log_error('tkinter HUD failed', e)
+            # Fallback: use win32gui (pywin32 is always in the bundle)
             try:
-                import os, traceback
-                log_dir = os.path.join(os.environ.get('APPDATA', '.'), 'Pratikey')
-                os.makedirs(log_dir, exist_ok=True)
-                with open(os.path.join(log_dir, 'hud_error.log'), 'a') as f:
-                    f.write(f'[HUD-Win] error: {e}\n{traceback.format_exc()}\n')
+                self._run_win32_impl()
+            except Exception as e2:
+                self._log_error('win32gui HUD also failed', e2)
+
+    def _log_error(self, context, exc):
+        try:
+            import os, traceback
+            log_dir = os.path.join(os.environ.get('APPDATA', '.'), 'Pratikey')
+            os.makedirs(log_dir, exist_ok=True)
+            with open(os.path.join(log_dir, 'hud_error.log'), 'a') as f:
+                f.write(f'[HUD-Win] {context}: {exc}\n{traceback.format_exc()}\n')
+        except Exception:
+            pass
+        print(f'[HUD-Win] {context}: {exc}')
+
+    def _run_tk_impl(self):
+        import tkinter as tk
+        self._root = tk.Tk()
+        self._root.withdraw()               # hide during configuration
+        self._root.overrideredirect(True)   # no title bar / border
+        self._root.attributes('-topmost', True)
+        self._root.wm_attributes('-toolwindow', True)  # no taskbar button
+        self._root.configure(bg='#1a0d01')
+
+        sw = self._root.winfo_screenwidth()
+        sh = self._root.winfo_screenheight()
+        self._root.geometry(f'{sw}x{self.BAR_HEIGHT}+0+{sh - self.BAR_HEIGHT}')
+
+        self._frame = tk.Frame(self._root, bg='#1a0d01')
+        self._frame.pack(fill='both', expand=True)
+
+        self._do_refresh()
+
+        # Show the window
+        self._root.deiconify()
+        self._root.lift()
+        self._root.attributes('-topmost', True)
+
+        # Re-assert topmost every second — Windows can lose it
+        def keep_on_top():
+            try:
+                if self._root and self.visible:
+                    self._root.attributes('-topmost', True)
+                    self._root.lift()
+                    self._root.after(1000, keep_on_top)
             except Exception:
                 pass
-            print(f'[HUD-Win] error: {e}')
+        self._root.after(500, keep_on_top)
+
+        self._root.mainloop()
+
+    def _run_win32_impl(self):
+        """Fallback: draw the HUD bar using raw win32gui (no tkinter needed)."""
+        import win32gui, win32con, win32api
+
+        hInst = win32api.GetModuleHandle(None)
+        cls_name = 'PratikeyHUD'
+
+        wc = win32gui.WNDCLASS()
+        wc.hInstance = hInst
+        wc.lpszClassName = cls_name
+        wc.hbrBackground = win32gui.CreateSolidBrush(0x01000D1A)  # dark (BGR)
+        wc.lpfnWndProc = self._win32_wnd_proc
+        try:
+            win32gui.RegisterClass(wc)
+        except Exception:
+            pass  # already registered
+
+        sw = win32api.GetSystemMetrics(win32con.SM_CXSCREEN)
+        sh = win32api.GetSystemMetrics(win32con.SM_CYSCREEN)
+        h  = self.BAR_HEIGHT
+
+        hwnd = win32gui.CreateWindowEx(
+            win32con.WS_EX_TOPMOST | win32con.WS_EX_TOOLWINDOW | win32con.WS_EX_NOACTIVATE,
+            cls_name, '',
+            win32con.WS_POPUP | win32con.WS_VISIBLE,
+            0, sh - h, sw, h,
+            0, 0, hInst, None,
+        )
+        self._win32_hwnd = hwnd
+        self._win32_sw   = sw
+
+        win32gui.ShowWindow(hwnd, win32con.SW_SHOW)
+        win32gui.UpdateWindow(hwnd)
+        win32gui.PumpMessages()
+
+    def _win32_wnd_proc(self, hwnd, msg, wParam, lParam):
+        import win32gui, win32con
+        if msg == win32con.WM_PAINT:
+            self._win32_paint(hwnd)
+            return 0
+        if msg == win32con.WM_DESTROY:
+            win32gui.PostQuitMessage(0)
+            return 0
+        return win32gui.DefWindowProc(hwnd, msg, wParam, lParam)
+
+    def _win32_paint(self, hwnd):
+        import win32gui, win32con
+        hdc, ps = win32gui.BeginPaint(hwnd)
+        rect = win32gui.GetClientRect(hwnd)
+
+        # Background
+        bg = win32gui.CreateSolidBrush(0x01000D1A)
+        win32gui.FillRect(hdc, rect, bg)
+        win32gui.DeleteObject(bg)
+
+        mappings = self._load_mappings()
+        win32gui.SetBkMode(hdc, win32con.TRANSPARENT)
+        sw = rect[2]
+        h  = self.BAR_HEIGHT
+        y  = (h - 16) // 2  # vertically centred
+
+        if mappings:
+            slot_w = sw // len(mappings)
+            for i, (fkey, label) in enumerate(mappings):
+                x = i * slot_w + 8
+                win32gui.SetTextColor(hdc, 0x0BB7F5)   # orange  (BGR)
+                win32gui.TextOut(hdc, x, y, fkey)
+                win32gui.SetTextColor(hdc, 0x555555)
+                win32gui.TextOut(hdc, x + 28, y, '>')
+                win32gui.SetTextColor(hdc, 0xEEEEEE)
+                win32gui.TextOut(hdc, x + 42, y, label[:20])
+
+        win32gui.EndPaint(hwnd, ps)
 
     def _do_refresh(self):
         if not self._frame:
